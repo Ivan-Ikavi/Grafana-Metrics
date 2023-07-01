@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8.0.33
+    ports: 
+      - 3333:3306
+    volumes:
+      - ./../sql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - MYSQL_ROOT_PASSWORD=new_password
+      - MYSQL_DATABASE=experimental_data
+      - MYSQL_USER=app_client
+      - MYSQL_PASSWORD=qwerty1
+
+  graphite:
+    image: graphiteapp/graphite-statsd
+    ports:
+      - 0.0.0.0:5555:80
+      - 2003:2003
+      - 8125:8125/udp
+    environment:
+      - SECRET_KEY=meadow
+      - DATABASE_TYPE=mysql
+      - DATABASE_HOST=mysql
+      - DATABASE_NAME=experimental_data
+      - DATABASE_USER=app_client
+      - DATABASE_PASSWORD=qwerty1
+    volumes:
+      - ./../graphite_data:/opt/graphite/storage
+    depends_on:
+      - mysql
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 0.0.0.0:80:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=qwerty1
+      # - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      # - GF_PLUGINS_ALLOW_LOADING_INSECURE_PLUGINS=true
+    volumes:
+      - ./../grafana_data:/var/lib/grafana
+    depends_on:
+      - graphite
